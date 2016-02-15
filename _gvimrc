@@ -1,0 +1,45 @@
+"************************************** カラースキーム設定 **********************************
+
+"colorscheme morning
+"colorscheme evening
+colorscheme darkblue
+"colorscheme delek
+"colorscheme koehler
+"colorscheme peachpuff
+"colorscheme torte
+"colorscheme blue
+"colorscheme desert
+"colorscheme ron
+"colorscheme zellner
+"colorscheme elflord
+"colorscheme murphy
+"colorscheme shine
+"colorscheme default
+"colorscheme pablo
+"colorscheme slate
+
+"************************************** GUI設定 **********************************
+
+"vimでコピーした文字列をクリップボードにコピーする
+set clipboard+=unnamed
+set clipboard=unnamed
+
+"検索文字列をハイライトする
+set hlsearch
+
+"水平スクロールバー表示
+set guioptions+=b
+
+"メニューバー非表示
+set guioptions-=m 
+
+"ツールバー非表示
+set guioptions-=T 
+let g:molokai_original = 1 
+
+"半透明にする
+autocmd GUIEnter * set transparency=220
+
+"*********************************************************************************
+
+
