@@ -13,10 +13,14 @@ endif
 " neobundle.vimの初期化
 " NeoBundleを更新するための設定
 call neobundle#begin(expand('C:/vim74-kaoriya-win64/bundle'))
-NeoBundleFetch 'Shougo/neobundle.vim'
+
+" キャッシュの読込み
+call neobundle#load_cache()
+
+NeoBundleFetch 'Shougo/neobundle.vim'			"プラグイン管理
 
 " 読み込むプラグインを記載
-NeoBundle 'Shougo/neobundle.vim'				"プラグイン管理
+"NeoBundle 'Shougo/neobundle.vim'				"プラグイン管理
 NeoBundle 'tpope/vim-surround'					"テキストの囲みや括弧のカーソル移動機能の拡張
 NeoBundle 'Shougo/unite.vim'					"ランチャー
 NeoBundle 'h1mesuke/unite-outline'				"uniteで関数一覧表示
@@ -35,6 +39,7 @@ NeoBundle 'mattn/hahhah-vim'					" ステータスラインに顔文字を表示
 NeoBundle 'kana/vim-smartchr'					"カンマやピリオドの後に自動で空白を入れる
 NeoBundle 'smartword'							"単語移動をスマートに
 NeoBundle 'yonchu/accelerated-smooth-scroll'	"スクロールをスムーズに
+NeoBundle 'soramugi/auto-ctags.vim'				"tagファイルを自動生成
 
 NeoBundle 'Shougo/neomru.vim', {
 \ 'depends' : 'Shougo/unite.vim'
@@ -56,10 +61,22 @@ if ! empty(neobundle#get("tagbar"))
 endif											"関数一覧を表示
 
 
+NeoBundle 'mattn/benchvimrc-vim'				"Vim起動時に各設定にかかった時間を表示する
 "NeoBundleLazy 'kana/vim-smartinput', { 'autoload' : {'insert' : '1'} }	"自動で括弧を閉じる
 "NeoBundle 'Townk/vim-autoclose'				"括弧を自動で閉じる
 "NeoBundle 'bronson/vim-trailing-whitespace'	"行末の半角スペースを可視化
 "NeoBundle 'yuroyoro/smooth_scroll.vim'			"スクロールをスムーズに
+"NeoBundle 'ompugao/ctrlp-locate', {
+      "\   'autoload': {
+      "\     'commands': ['CtrlPLocate'],
+      "\   }
+      "\ }										"EveryThingコマンドの実行
+"if neobundle#tap('ctrlp-locate')
+  "nnoremap <Space>e :<C-u>CtrlPLocate<CR>
+  "let g:ctrlp_locate_command_definition = 'es -n 100 {query}'
+
+  "call neobundle#untap()
+"endif
 
 "ColorScheme Plugin
 NeoBundle 'altercation/vim-colors-solarized'	" solarized カラースキーム
@@ -74,6 +91,9 @@ NeoBundle 'therubymug/vim-pyte'					" pyte カラースキーム
 NeoBundle 'tomasr/molokai'						" molokai カラースキーム
 NeoBundle 'ujihisa/unite-colorscheme'			" カラースキーム一覧表示に Unite.vim を使う
 
+" キャッシュの書込み
+NeoBundleSaveCache
+
 call neobundle#end()
 
 " 読み込んだプラグインも含め、ファイルタイプの検出、ファイルタイプ別プラグイン/インデントを有効化する
@@ -87,6 +107,23 @@ NeoBundleCheck
 "-------------------------
 
 "************************************** 設定 *****************************************************************
+
+" If starting gvim && arguments were given
+" (assuming double-click on file explorer)
+if has('gui_running') && argc()
+    let s:running_vim_list = filter(
+    \   split(serverlist(), '\n'),
+    \   'v:val !=? v:servername')
+    " If one or more Vim instances are running
+    if !empty(s:running_vim_list)
+        " Open given files in running Vim and exit.
+        silent execute '!start gvim'
+        \   '--servername' s:running_vim_list[0]
+        \   '--remote-tab-silent' join(argv(), ' ')
+        qa!
+    endif
+    unlet s:running_vim_list
+endif
 
 "colorscheme morning
 "colorscheme evening
@@ -111,6 +148,9 @@ let mapleader = ","
 
 "起動時のメッセージを消す 
 set shortmess& shortmess+=I 
+
+" Windows でもパスの区切り文字を / にする
+set shellslash
 
 "OSのクリップボードを使用する 
 set clipboard+=unnamed
@@ -171,6 +211,12 @@ set cursorline
 " スクロールする時に下が見えるようにする
 set scrolloff=5
 
+" 横スクロールする時に横が見えるようにする
+set sidescrolloff=5
+
+" 横スクロールは1行ずつ行う
+set sidescroll=1
+
 " 文字がない場所にもカーソルを移動できるようにする
 "set virtualedit=all
 
@@ -193,7 +239,7 @@ set hidden
 "set notitle
 
 "保存時に自動でtagsファイル作成
-let g:auto_ctags = 1
+"let g:auto_ctags = 1
 "let g:auto_ctags_directory_list = ['', '']
 
 "常に開いているファイルと同じディレクトリをカレントディレクトリにする
@@ -242,6 +288,8 @@ nnoremap <silent> [unite]r :<C-u>Unite<Space>register<CR>
 nnoremap <silent> [unite]R :<C-u>UniteResume<CR>			
 "カラースキーム一覧を表示する
 nnoremap		  [unite]c :Unite colorscheme -auto-preview<CR>
+"everything検索を実行する
+nnoremap		  [unite]e :Unite everything<CR>i
 au FileType unite nmap <silent> <buffer> <expr> <C-j> unite#do_action('split')
 au FileType unite imap <silent> <buffer> <expr> <C-j> unite#do_action('split')
 au FileType unite nmap <silent> <buffer> <expr> <C-l> unite#do_action('vsplit')
@@ -334,25 +382,44 @@ map g/ <Plug>(incsearch-stay)
 call lexima#add_rule({'at': '\%#.*[-0-9a-zA-Z_,:]', 'char': '{', 'input': '{'})		"文末以外では無効
 call lexima#add_rule({'at': '\%#\n\s*}', 'char': '}', 'input': '}', 'delete': '}'})	"自動クローズした文字が次の行にあってもタイプできる
 
+
 "vim-smartchrの設定
 " 演算子の間に空白を入れる 
 inoremap <expr> = smartchr#loop(' = ', ' == ', ' === ', '=')
 inoremap <expr> + smartchr#loop(' + ', '++', '+++', '+')
-inoremap <expr> - smartchr#loop(' - ', '--', '---', '-')
+"inoremap <expr> - smartchr#loop(' - ', '--', '---', '-')
 inoremap <expr> & smartchr#loop('&', ' && ', '&&&')
 "inoremap <expr> | smartchr#loop(' | ', ' || ', '|||')
 inoremap <expr> += smartchr#loop(' += ')
 inoremap <expr> -= smartchr#loop(' -= ')
 inoremap <expr> *= smartchr#loop(' *= ')
-inoremap <expr> if smartchr#loop('if ')
+"inoremap <expr> if smartchr#loop('if ')
 inoremap <expr> for smartchr#loop('for ')
 inoremap <expr> while smartchr#loop('while ')
 
+"benchvimrc-vim.gitのコマンド
+nnoremap <F12> :BenchVimrc<CR>
+
+"auto-ctags.vimの設定
+"ファイル保存時に自動でtagファイルを生成する
+"let g:auto_ctags = 1
+"tagファイルを作成するディレクトリの指定
+"let g:auto_ctags_directory_list = ['.git', 'work']
+"Ctags実行時のオプション
+" --recurse ディレクトリを再起的に
+" --sort=yes 作成されたキーワードをsortする
+" --append=no 既存のタグファイルに追加しない
+"let g:auto_ctags_tags_args = '--tag-relative --recurse --sort=yes'
+"開いているファイルタイプ専用のtagファイルを作る
+"let g:auto_ctags_filetype_mode = 1
 
 "************************************** ノーマルモード　キーバインド *****************************************************************
 
 "カーソルの位置の単語をgrepするショートカット
 noremap <C-g> *zz :Ag <cword> <c-r>=expand('%:p:r')<cr>
+
+"任意の単語をgrepするショートカット
+noremap <Space>ag :Ag 
 
 "Spaceを2回押すことでハイライトを消す
 nnoremap <silent> <Space><Space> :nohlsearch<CR>
@@ -429,6 +496,10 @@ nnoremap viw vw
 
 "検索中の文字列を置換する
 nnoremap <C-@> *N:%s//
+
+"数字のインクリメントとディクリメント
+nnoremap + <C-a>
+nnoremap - <C-x>
 
 "************************************** インサートモード　キーバインド *****************************************************************
 
